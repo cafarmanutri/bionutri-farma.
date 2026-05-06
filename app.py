@@ -60,8 +60,8 @@ def calcular_metabolismo(peso, altura, idade, sexo, nivel_atividade):
     else:
         tmb = (10 * peso) + (6.25 * altura) - (5 * idade) - 161
     
-    fatores = {"Sedentário": 1.2, "Levemente Ativo": 1.375, "Moderadamente Ativo": 1.55, "Muito Ativo": 1.725, "Extremamente Ativo": 1.9}
-    get = tmb * fatores[nivel_atividade]
+    fatores = {"Sedentario": 1.2, "Levemente Ativo": 1.375, "Moderadamente Ativo": 1.55, "Muito Ativo": 1.725, "Extremamente Ativo": 1.9}
+    get = tmb * fatores.get(nivel_atividade, 1.2)
     return tmb, get
 
 def calcular_agua(peso):
@@ -75,12 +75,12 @@ st.caption("Responsável Técnica: Dra. Carla Ferraz (Farmacêutica & Nutricioni
 # Sidebar
 with st.sidebar:
     st.header("📋 Dados do Paciente")
-    nome = st.text_input("Nome Completo", "Paciente Exemplo")
+    nome = st.text_input("Nome Completo", "Nome do Paciente")
     idade = st.number_input("Idade", min_value=1, max_value=120, value=30)
     sexo = st.selectbox("Sexo", ["Masculino", "Feminino"])
     peso = st.number_input("Peso (kg)", min_value=10.0, value=70.0)
     altura = st.number_input("Altura (cm)", min_value=50, value=170)
-    atividade = st.selectbox("Nível de Atividade", ["Sedentário", "Levemente Ativo", "Moderadamente Ativo", "Muito Ativo", "Extremamente Ativo"])
+    atividade = st.selectbox("Nivel de Atividade", ["Sedentario", "Levemente Ativo", "Moderadamente Ativo", "Muito Ativo", "Extremamente Ativo"])
 
 tabs = st.tabs(["📏 Antropometria", "🤏 Dobras Cutâneas", "📊 Resultados & Relatório"])
 
@@ -106,14 +106,14 @@ with tabs[1]:
     c1, c2 = st.columns(2)
     dobras = {}
     with c1:
+        dobras['Bíceps'] = st.number_input("Bíceps", value=8.0)
         dobras['Tríceps'] = st.number_input("Tríceps", value=12.0)
         dobras['Subescapular'] = st.number_input("Subescapular", value=15.0)
-        dobras['Supra-ilíaca'] = st.number_input("Supra-ilíaca", value=18.0)
         dobras['Axilar Média'] = st.number_input("Axilar Média", value=15.0)
     with c2:
         dobras['Peitoral'] = st.number_input("Peitoral", value=12.0)
+        dobras['Supra-ilíaca'] = st.number_input("Supra-ilíaca", value=18.0)
         dobras['Abdominal'] = st.number_input("Abdominal", value=20.0)
-        dobras['Coxa'] = st.number_input("Coxa", value=20.0)
 
 with tabs[2]:
     # Cálculos
@@ -133,7 +133,6 @@ with tabs[2]:
 
     st.markdown("---")
     
-    # Tabelas de Referência
     col_t1, col_t2 = st.columns(2)
     with col_t1:
         st.write("**Referência RCQ (Relação Cintura-Quadril)**")
@@ -146,10 +145,9 @@ with tabs[2]:
 
     with col_t2:
         st.write("**Metas Calóricas (Kcal)**")
-        if st.button("Ver Planejamento de Calorias"):
-            st.write(f"🔥 Manutenção: **{get:.0f} kcal**")
-            st.write(f"📉 Emagrecimento: **{get-500:.0f} kcal**")
-            st.write(f"📈 Ganho de Massa: **{get+400:.0f} kcal**")
+        st.write(f"🔥 Manutenção: **{get:.0f} kcal**")
+        st.write(f"📉 Emagrecimento: **{get-500:.0f} kcal**")
+        st.write(f"📈 Ganho de Massa: **{get+400:.0f} kcal**")
 
     # GERAÇÃO DE PDF
     def gerar_pdf():
@@ -174,46 +172,59 @@ with tabs[2]:
         pdf.cell(0, 6, f"Idade: {idade} anos | Sexo: {sexo} | Atividade: {atividade}", ln=True)
         pdf.cell(0, 6, f"Peso: {peso}kg | Altura: {altura}cm | IMC: {imc:.2f} ({imc_classe})", ln=True)
 
-        # Seção 1: Perimetria (Medidas)
+        # Seção 1: Medidas Antropométricas
         pdf.ln(5)
         pdf.set_fill_color(230, 230, 230)
         pdf.set_font("Arial", 'B', 11)
         pdf.cell(0, 8, "1. MEDIDAS ANTROPOMETRICAS (cm)", ln=True, fill=True)
         pdf.set_font("Arial", '', 10)
         
-        data_medidas = [
+        medidas = [
             [f"Pescoco: {pescoco}", f"Cintura: {cintura}", f"Coxa D: {coxa_d}"],
             [f"Braco D: {braco_d}", f"Abdomen: {abdomen}", f"Coxa E: {coxa_e}"],
             [f"Braco E: {braco_e}", f"Quadril: {quadril}", f"Pant. D: {pant_d}"],
-            ["", f"RCQ: {rcq:.2f} ({rcq_risco})", f"Pant. E: {pant_e}"]
+            ["", f"RCQ: {rcq:.2f}", f"Pant. E: {pant_e}"]
         ]
-        for row in data_medidas:
-            pdf.cell(60, 7, row[0], border=0)
-            pdf.cell(60, 7, row[1], border=0)
-            pdf.cell(60, 7, row[2], border=0)
+        for row in medidas:
+            pdf.cell(60, 7, row[0], 0)
+            pdf.cell(60, 7, row[1], 0)
+            pdf.cell(60, 7, row[2], 0)
             pdf.ln()
 
-        # Seção 2: Composição e Dobras
+        # Seção 2: Referência RCQ (Tabela no PDF)
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 11)
-        pdf.cell(0, 8, "2. COMPOSICAO CORPORAL E DOBRAS (Pollock 7)", ln=True, fill=True)
+        pdf.cell(0, 8, f"2. CLASSIFICACAO RCQ - Resultado: {rcq_risco}", ln=True, fill=True)
+        pdf.set_font("Arial", 'B', 9)
+        pdf.cell(40, 7, "Risco", 1, 0, 'C')
+        pdf.cell(75, 7, "Homens", 1, 0, 'C')
+        pdf.cell(75, 7, "Mulheres", 1, 1, 'C')
+        pdf.set_font("Arial", '', 9)
+        pdf.cell(40, 6, "Baixo", 1, 0, 'C'); pdf.cell(75, 6, "< 0.90", 1, 0, 'C'); pdf.cell(75, 6, "< 0.80", 1, 1, 'C')
+        pdf.cell(40, 6, "Moderado", 1, 0, 'C'); pdf.cell(75, 6, "0.90 - 0.95", 1, 0, 'C'); pdf.cell(75, 6, "0.80 - 0.85", 1, 1, 'C')
+        pdf.cell(40, 6, "Alto", 1, 0, 'C'); pdf.cell(75, 6, "0.96 - 1.00", 1, 0, 'C'); pdf.cell(75, 6, "0.86 - 0.90", 1, 1, 'C')
+        pdf.cell(40, 6, "Muito Alto", 1, 0, 'C'); pdf.cell(75, 6, "> 1.00", 1, 0, 'C'); pdf.cell(75, 6, "> 0.90", 1, 1, 'C')
+
+        # Seção 3: Composição e Dobras
+        pdf.ln(5)
+        pdf.set_font("Arial", 'B', 11)
+        pdf.cell(0, 8, "3. COMPOSICAO CORPORAL E DOBRAS (mm)", ln=True, fill=True)
         pdf.set_font("Arial", '', 10)
         pdf.cell(0, 7, f"Percentual de Gordura: {perc_gordura:.1f}%", ln=True)
         pdf.cell(0, 7, f"Massa Magra: {m_magra:.1f} kg | Massa Gorda: {m_gorda:.1f} kg", ln=True)
         
         pdf.ln(2)
         pdf.set_font("Arial", 'I', 9)
-        dobras_str = ", ".join([f"{k}: {v}mm" for k, v in dobras.items()])
-        pdf.multi_cell(0, 6, f"Dobras: {dobras_str}")
+        dobras_texto = ", ".join([f"{k}: {v}mm" for k, v in dobras.items()])
+        pdf.multi_cell(0, 6, f"Dobras: {dobras_texto}")
 
-        # Seção 3: Planejamento
+        # Seção 4: Planejamento
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 11)
-        pdf.cell(0, 8, "3. NECESSIDADES ENERGETICAS E HIDRICAS", ln=True, fill=True)
+        pdf.cell(0, 8, "4. NECESSIDADES ENERGETICAS E HIDRICAS", ln=True, fill=True)
         pdf.set_font("Arial", '', 10)
         pdf.cell(0, 7, f"Taxa Metabolica Basal: {tmb:.0f} kcal", ln=True)
-        pdf.cell(0, 7, f"Gasto Energetico Total: {get:.0f} kcal (Manter Peso)", ln=True)
-        pdf.cell(0, 7, f"Sugestao Emagrecimento: {get-500:.0f} kcal | Ganho de Massa: {get+400:.0f} kcal", ln=True)
+        pdf.cell(0, 7, f"Manter Peso: {get:.0f} kcal | Emagrecer: {get-500:.0f} kcal | Massa: {get+400:.0f} kcal", ln=True)
         pdf.set_font("Arial", 'B', 10)
         pdf.cell(0, 10, f"META DE HIDRATACAO: {agua:.2f} Litros de agua por dia", ln=True)
 
@@ -221,10 +232,10 @@ with tabs[2]:
 
     st.markdown("---")
     if st.button("Gerar Relatório Final"):
-        pdf_output = gerar_pdf()
+        pdf_out = gerar_pdf()
         st.download_button(
-            label="💾 Clique aqui para Baixar PDF",
-            data=pdf_output,
+            label="💾 Baixar Relatório em PDF",
+            data=pdf_out,
             file_name=f"Relatorio_{nome.replace(' ', '_')}.pdf",
             mime="application/pdf"
         )

@@ -129,7 +129,7 @@ with tabs[2]:
         pdf.add_page()
         
         # Cabeçalho
-        pdf.set_fill_color(26, 35, 126) # Azul Escuro
+        pdf.set_fill_color(184, 134, 11) # Cor B8860B (Dourado Profundo)
         pdf.rect(0, 0, 210, 40, 'F')
         pdf.set_text_color(255, 255, 255)
         pdf.set_font("Arial", 'B', 22)

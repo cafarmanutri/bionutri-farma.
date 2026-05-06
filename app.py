@@ -49,24 +49,6 @@ def calcular_composicao(sexo, idade, peso, dobras):
     massa_gorda = peso * (percentual_gordura / 100)
     massa_magra = peso - massa_gorda
     return percentual_gordura, massa_gorda, massa_magra
-    
-    def calcular_tmb(peso, altura, idade, sexo):
-     calcular_metabolismo(peso, altura, idade, sexo):
-    # Fórmula de Mifflin-St Jeor (mais precisa atualmente)
-    if sexo == "Masculino":
-        return (10 * peso) + (6.# Fórmula de Harris-Benedict Revisada
-    if sexo == "Masculino":
-        tmb = 88.25 * altura) - (5 * idade) + 5
-    else:
-        return (1036 + (13.4 * peso) + (4.8 * altura) - (5.7 * peso) + (6.25 * altura) - (5 * idade) - 161
-
- * idade)
-    else:
-        tmb = 447.59 + (9.2def calcular_agua(peso):
-    return (peso * 35) / 1000 # Retorna em * peso) + (3.1 * altura) - (4.3 * idade)
-    return tmb
-
-def calcular_agua litros (35ml por kg)
 
 # --- INTERFACE ---
 

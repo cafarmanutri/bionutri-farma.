@@ -31,9 +31,15 @@ def calcular_imc(peso, altura_cm):
 def calcular_rcq(cintura, quadril, sexo):
     rcq = cintura / quadril
     if sexo == "Masculino":
-        risco = "Baixo" if rcq < 0.90 else "Moderado" if rcq < 0.96 else "Alto"
+        if rcq < 0.90: risco = "Baixo"
+        elif rcq <= 0.95: risco = "Moderado"
+        elif rcq <= 1.0: risco = "Alto"
+        else: risco = "Muito Alto"
     else:
-        risco = "Baixo" if rcq < 0.80 else "Moderado" if rcq < 0.86 else "Alto"
+        if rcq < 0.80: risco = "Baixo"
+        elif rcq <= 0.85: risco = "Moderado"
+        elif rcq <= 0.90: risco = "Alto"
+        else: risco = "Muito Alto"
     return rcq, risco
 
 def calcular_composicao(sexo, idade, peso, dobras):
@@ -49,24 +55,17 @@ def calcular_composicao(sexo, idade, peso, dobras):
     return perc_g, m_gorda, m_magra
 
 def calcular_metabolismo(peso, altura, idade, sexo, nivel_atividade):
-    # Equação de Mifflin-St Jeor
     if sexo == "Masculino":
         tmb = (10 * peso) + (6.25 * altura) - (5 * idade) + 5
     else:
         tmb = (10 * peso) + (6.25 * altura) - (5 * idade) - 161
     
-    fatores = {
-        "Sedentário": 1.2,
-        "Levemente Ativo": 1.375,
-        "Moderadamente Ativo": 1.55,
-        "Muito Ativo": 1.725,
-        "Extremamente Ativo": 1.9
-    }
+    fatores = {"Sedentário": 1.2, "Levemente Ativo": 1.375, "Moderadamente Ativo": 1.55, "Muito Ativo": 1.725, "Extremamente Ativo": 1.9}
     get = tmb * fatores[nivel_atividade]
     return tmb, get
 
 def calcular_agua(peso):
-    return peso * 35 / 1000  # 35ml por kg
+    return peso * 35 / 1000
 
 # --- INTERFACE ---
 
@@ -76,36 +75,42 @@ st.caption("Responsável Técnica: Dra. Carla Ferraz (Farmacêutica & Nutricioni
 # Sidebar
 with st.sidebar:
     st.header("📋 Dados do Paciente")
-    nome = st.text_input("Nome Completo")
+    nome = st.text_input("Nome Completo", "Paciente Exemplo")
     idade = st.number_input("Idade", min_value=1, max_value=120, value=30)
     sexo = st.selectbox("Sexo", ["Masculino", "Feminino"])
-    peso = st.number_input("Peso (kg)", min_value=10.0, max_value=300.0, value=70.0, step=0.1)
-    altura = st.number_input("Altura (cm)", min_value=50, max_value=250, value=170)
-    atividade = st.selectbox("Nível de Atividade", 
-                             ["Sedentário", "Levemente Ativo", "Moderadamente Ativo", "Muito Ativo", "Extremamente Ativo"])
+    peso = st.number_input("Peso (kg)", min_value=10.0, value=70.0)
+    altura = st.number_input("Altura (cm)", min_value=50, value=170)
+    atividade = st.selectbox("Nível de Atividade", ["Sedentário", "Levemente Ativo", "Moderadamente Ativo", "Muito Ativo", "Extremamente Ativo"])
 
 tabs = st.tabs(["📏 Antropometria", "🤏 Dobras Cutâneas", "📊 Resultados & Relatório"])
 
 with tabs[0]:
     st.subheader("Medidas Circunferenciais (cm)")
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
-        braço_d = st.number_input("Braço Direito", value=30.0)
-        coxa_d = st.number_input("Coxa Direita", value=55.0)
+        pescoco = st.number_input("Pescoço", value=35.0)
+        braco_d = st.number_input("Braço Direito", value=30.0)
+        braco_e = st.number_input("Braço Esquerdo", value=30.0)
     with col2:
-        cintura = st.number_input("Cintura", value=80.0)
+        cintura = st.number_input("Cintura (Estreita)", value=80.0)
+        abdomen = st.number_input("Abdômen (Cintura Larga)", value=85.0)
         quadril = st.number_input("Quadril", value=100.0)
+    with col3:
+        coxa_d = st.number_input("Coxa Direita", value=55.0)
+        coxa_e = st.number_input("Coxa Esquerda", value=55.0)
+        pant_d = st.number_input("Panturrilha Direita", value=36.0)
+        pant_e = st.number_input("Panturrilha Esquerda", value=36.0)
 
 with tabs[1]:
     st.subheader("Protocolo Pollock (7 Dobras) - mm")
-    col1, col2 = st.columns(2)
+    c1, c2 = st.columns(2)
     dobras = {}
-    with col1:
+    with c1:
         dobras['Tríceps'] = st.number_input("Tríceps", value=12.0)
         dobras['Subescapular'] = st.number_input("Subescapular", value=15.0)
         dobras['Supra-ilíaca'] = st.number_input("Supra-ilíaca", value=18.0)
         dobras['Axilar Média'] = st.number_input("Axilar Média", value=15.0)
-    with col2:
+    with c2:
         dobras['Peitoral'] = st.number_input("Peitoral", value=12.0)
         dobras['Abdominal'] = st.number_input("Abdominal", value=20.0)
         dobras['Coxa'] = st.number_input("Coxa", value=20.0)
@@ -116,89 +121,110 @@ with tabs[2]:
     rcq, rcq_risco = calcular_rcq(cintura, quadril, sexo)
     perc_gordura, m_gorda, m_magra = calcular_composicao(sexo, idade, peso, dobras)
     tmb, get = calcular_metabolismo(peso, altura, idade, sexo, atividade)
-    agua_diaria = calcular_agua(peso)
+    agua = calcular_agua(peso)
 
     # Dashboard
     st.subheader("Dashboard Clínico")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("IMC", f"{imc:.1f}", imc_classe)
-    c2.metric("RCQ", f"{rcq:.2f}", f"Risco {rcq_risco}")
-    c3.metric("% Gordura", f"{perc_gordura:.1f}%")
-    c4.metric("Massa Magra", f"{m_magra:.1f} kg")
+    res1, res2, res3, res4 = st.columns(4)
+    res1.metric("IMC", f"{imc:.1f}", imc_classe)
+    res2.metric("RCQ", f"{rcq:.2f}", f"Risco {rcq_risco}")
+    res3.metric("% Gordura", f"{perc_gordura:.1f}%")
+    res4.metric("Água Diária", f"{agua:.2f} L")
 
     st.markdown("---")
     
-    # NOVA SEÇÃO: PLANEJAMENTO NUTRICIONAL
-    st.subheader("⚡ Planejamento Energético e Hidratação")
-    
-    if st.button("Calcular Necessidades Nutricionais"):
-        col_res1, col_res2 = st.columns(2)
-        
-        with col_res1:
-            st.write("**Gasto Energético (Kcal)**")
-            metas_caloricas = {
-                "Objetivo": ["Taxa Metabólica Basal", "Manter Peso", "Emagrecimento (Déficit)", "Ganho de Massa (Superávit)"],
-                "Calorias (kcal)": [f"{tmb:.0f}", f"{get:.0f}", f"{get-500:.0f}", f"{get+400:.0f}"]
-            }
-            st.table(pd.DataFrame(metas_caloricas))
-        
-        with col_res2:
-            st.write("**Ingestão Hídrica Recomendada**")
-            st.metric("Água Diária", f"{agua_diaria:.2f} Litros")
-            st.info("Recomendação baseada em 35ml por quilo de peso corporal.")
+    # Tabelas de Referência
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        st.write("**Referência RCQ (Relação Cintura-Quadril)**")
+        rcq_data = {
+            "Risco": ["Baixo", "Moderado", "Alto", "Muito Alto"],
+            "Homens": ["< 0.90", "0.90 - 0.95", "0.96 - 1.00", "> 1.00"],
+            "Mulheres": ["< 0.80", "0.80 - 0.85", "0.86 - 0.90", "> 0.90"]
+        }
+        st.table(pd.DataFrame(rcq_data))
 
-    # GERAÇÃO DE PDF ATUALIZADA
+    with col_t2:
+        st.write("**Metas Calóricas (Kcal)**")
+        if st.button("Ver Planejamento de Calorias"):
+            st.write(f"🔥 Manutenção: **{get:.0f} kcal**")
+            st.write(f"📉 Emagrecimento: **{get-500:.0f} kcal**")
+            st.write(f"📈 Ganho de Massa: **{get+400:.0f} kcal**")
+
+    # GERAÇÃO DE PDF
     def gerar_pdf():
         pdf = FPDF()
         pdf.add_page()
         
         # Cabeçalho
-        pdf.set_fill_color(26, 35, 126) # Azul Marinho
-        pdf.rect(0, 0, 210, 40, 'F')
+        pdf.set_fill_color(26, 35, 126)
+        pdf.rect(0, 0, 210, 35, 'F')
         pdf.set_text_color(255, 255, 255)
-        pdf.set_font("Arial", 'B', 20)
-        pdf.cell(0, 20, "BioNutri Farma - Relatorio Nutricional", ln=True, align='C')
-        pdf.set_font("Arial", '', 12)
-        pdf.cell(0, 10, "Dra. Carla Ferraz - Farmaceutica & Nutricionista", ln=True, align='C')
+        pdf.set_font("Arial", 'B', 18)
+        pdf.cell(0, 15, "BIONUTRI FARMA - RELATORIO CLINICO", ln=True, align='C')
+        pdf.set_font("Arial", '', 11)
+        pdf.cell(0, 5, "Dra. Carla Ferraz - Farmaceutica & Nutricionista", ln=True, align='C')
         
         # Dados Paciente
         pdf.set_text_color(0, 0, 0)
-        pdf.ln(20)
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, f"Paciente: {nome}", ln=True)
-        pdf.set_font("Arial", '', 11)
-        pdf.cell(0, 7, f"Idade: {idade} anos | Sexo: {sexo} | Peso: {peso}kg | Altura: {altura}cm", ln=True)
-        pdf.cell(0, 7, f"Atividade: {atividade}", ln=True)
-        
-        # Composição Corporal
-        pdf.ln(5)
-        pdf.set_fill_color(232, 245, 233)
+        pdf.ln(15)
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, "1. COMPOSICAO CORPORAL", ln=True, fill=True)
-        pdf.set_font("Arial", '', 11)
-        pdf.cell(0, 8, f"IMC: {imc:.2f} ({imc_classe})", ln=True)
-        pdf.cell(0, 8, f"Percentual de Gordura: {perc_gordura:.2f}%", ln=True)
-        pdf.cell(0, 8, f"Massa Magra: {m_magra:.2f}kg | Massa Gorda: {m_gorda:.2f}kg", ln=True)
-        
-        # Energético
+        pdf.cell(0, 8, f"Paciente: {nome.upper()}", ln=True)
+        pdf.set_font("Arial", '', 10)
+        pdf.cell(0, 6, f"Idade: {idade} anos | Sexo: {sexo} | Atividade: {atividade}", ln=True)
+        pdf.cell(0, 6, f"Peso: {peso}kg | Altura: {altura}cm | IMC: {imc:.2f} ({imc_classe})", ln=True)
+
+        # Seção 1: Perimetria (Medidas)
         pdf.ln(5)
-        pdf.set_fill_color(232, 245, 233)
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, "2. PLANEJAMENTO ENERGETICO E HIDRICO", ln=True, fill=True)
-        pdf.set_font("Arial", '', 11)
-        pdf.cell(0, 8, f"Taxa Metabolica Basal: {tmb:.0f} kcal", ln=True)
-        pdf.cell(0, 8, f"Gasto Energetico Total (Manter Peso): {get:.0f} kcal", ln=True)
-        pdf.cell(0, 8, f"Meta para Emagrecimento: {get-500:.0f} kcal", ln=True)
-        pdf.cell(0, 8, f"Meta para Ganho de Massa: {get+400:.0f} kcal", ln=True)
-        pdf.cell(0, 8, f"RECOMENDACAO DE AGUA: {agua_diaria:.2f} Litros/dia", ln=True)
+        pdf.set_fill_color(230, 230, 230)
+        pdf.set_font("Arial", 'B', 11)
+        pdf.cell(0, 8, "1. MEDIDAS ANTROPOMETRICAS (cm)", ln=True, fill=True)
+        pdf.set_font("Arial", '', 10)
+        
+        data_medidas = [
+            [f"Pescoco: {pescoco}", f"Cintura: {cintura}", f"Coxa D: {coxa_d}"],
+            [f"Braco D: {braco_d}", f"Abdomen: {abdomen}", f"Coxa E: {coxa_e}"],
+            [f"Braco E: {braco_e}", f"Quadril: {quadril}", f"Pant. D: {pant_d}"],
+            ["", f"RCQ: {rcq:.2f} ({rcq_risco})", f"Pant. E: {pant_e}"]
+        ]
+        for row in data_medidas:
+            pdf.cell(60, 7, row[0], border=0)
+            pdf.cell(60, 7, row[1], border=0)
+            pdf.cell(60, 7, row[2], border=0)
+            pdf.ln()
+
+        # Seção 2: Composição e Dobras
+        pdf.ln(5)
+        pdf.set_font("Arial", 'B', 11)
+        pdf.cell(0, 8, "2. COMPOSICAO CORPORAL E DOBRAS (Pollock 7)", ln=True, fill=True)
+        pdf.set_font("Arial", '', 10)
+        pdf.cell(0, 7, f"Percentual de Gordura: {perc_gordura:.1f}%", ln=True)
+        pdf.cell(0, 7, f"Massa Magra: {m_magra:.1f} kg | Massa Gorda: {m_gorda:.1f} kg", ln=True)
+        
+        pdf.ln(2)
+        pdf.set_font("Arial", 'I', 9)
+        dobras_str = ", ".join([f"{k}: {v}mm" for k, v in dobras.items()])
+        pdf.multi_cell(0, 6, f"Dobras: {dobras_str}")
+
+        # Seção 3: Planejamento
+        pdf.ln(5)
+        pdf.set_font("Arial", 'B', 11)
+        pdf.cell(0, 8, "3. NECESSIDADES ENERGETICAS E HIDRICAS", ln=True, fill=True)
+        pdf.set_font("Arial", '', 10)
+        pdf.cell(0, 7, f"Taxa Metabolica Basal: {tmb:.0f} kcal", ln=True)
+        pdf.cell(0, 7, f"Gasto Energetico Total: {get:.0f} kcal (Manter Peso)", ln=True)
+        pdf.cell(0, 7, f"Sugestao Emagrecimento: {get-500:.0f} kcal | Ganho de Massa: {get+400:.0f} kcal", ln=True)
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(0, 10, f"META DE HIDRATACAO: {agua:.2f} Litros de agua por dia", ln=True)
 
         return pdf.output(dest='S').encode('latin-1')
 
     st.markdown("---")
-    pdf_output = gerar_pdf()
-    st.download_button(
-        label="📄 Baixar Relatório Clínico Completo",
-        data=pdf_output,
-        file_name=f"Relatorio_{nome}.pdf",
-        mime="application/pdf"
-    )
+    if st.button("Gerar Relatório Final"):
+        pdf_output = gerar_pdf()
+        st.download_button(
+            label="💾 Clique aqui para Baixar PDF",
+            data=pdf_output,
+            file_name=f"Relatorio_{nome.replace(' ', '_')}.pdf",
+            mime="application/pdf"
+        )
